@@ -12,12 +12,25 @@
   </header>
 
   <div id="setup">
-    How many questions?
-    <select id="numberOfQuestions">
-      <option value=10>10</option>
-      <option value=20>20</option>
-      <option value=30>30</option>
-    </select>
+    <div>
+      How many questions?
+      <select id="numberOfQuestions">
+        <option value=10>10</option>
+        <option value=20>20</option>
+        <option value=30>30</option>
+      </select>
+    </div>
+
+    <div>
+      Choose a location
+      <select id="location">
+        <option value="">Choose a location</option>
+        <option value="melbourne">Melbourne</option>
+        <option value="wilsonsProm">Wilson's Promontory</option>
+        <option value="victoria">Victoria</option>
+        <option value="australia">Australia</option>
+      </select>
+    </div>
 
     <div>
       <button id="startQuiz">Start Quiz</button>
@@ -25,6 +38,7 @@
 
   </div>
 
+  <div id="loadingMessage" style="display: none;">Creating quiz...</div>
   <div>
     <img id="myImg" src="">
   </div>
@@ -34,6 +48,7 @@
   <div id="answer" style="display: none;">
     <div id="scientific_name" style="font-style: italic;"></div>
     <div id="common_name"></div>
+    <div id="placeGuess"></div>
   </div>
 
   <div>

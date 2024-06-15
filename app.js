@@ -6,31 +6,51 @@ document.getElementById('numberOfQuestions').addEventListener('change', function
   numberOfQuestions = this.value;
 });
 
+let locationCoordinates = {
+  melbourne: { swlat: -38.015056522315, swlong: 144.5385483707626, nelat: -37.58960704906771, nelong: 145.4644329517832 },
+  wilsonsProm: { swlat: -39.15380623139274, swlong: 144.56, nelat: -38.7739805810115, nelong: 147.6 },
+  victoria: { swlat: -39.08272063128122, swlong: 140.55699723939387, nelat: -39.08272063128122, nelong: 140.55699723939387 },
+  australia: { swlat: -44.32569739068832, swlong: 111.81297712054247, nelat: -11.524606117947133, nelong: 152.64407854033962 }
+}
+
+let locationId = ''
+document.getElementById('location').addEventListener('change', function () {
+  console.log('Location:', this.value);
+  locationId = this.value;
+});
+
 function runQuiz() {
+  // Display the loading message
+  document.getElementById('loadingMessage').style.display = 'block';
+
   let baseUrl = 'https://inaturalist.org';
   let endpoint = '/observations';
-  let restrictions = 'photos';
+  let restrictions = 'has[]=photos&has=geo';
   let qualitygrade = 'research';
+  let locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`;
   let perPage = numberOfQuestions
 
-  let url = `${baseUrl}${endpoint}.json?has[]=${restrictions}&qualitygrade=${qualitygrade}&per_page=${perPage}`;
+  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}`;
 
   fetch(url)
     .then(response => response.json())
     .then(data => {
       console.log(data)
+      // Hide the loading message
+      document.getElementById('loadingMessage').style.display = 'none';
 
       // Set initial values to first observation in list
       let img = document.getElementById('myImg');
 
-      img.src = data[0].photos[0].medium_url;
+      img.src = data[0]?.photos[0]?.medium_url;
       img.onload = function () {
         // Show the Show Answer button
         document.getElementById('showAnswerButton').style.display = 'block'
       };
 
       document.getElementById('scientific_name').textContent = data[0].taxon.name;
-      document.getElementById('common_name').textContent = data[0].taxon.common_name.name;
+      document.getElementById('common_name').textContent = data[0].taxon?.common_name?.name;
+      document.getElementById('placeGuess').textContent = data[0]?.place_guess;
 
       let currentIndex = 0;
 
@@ -56,6 +76,7 @@ function runQuiz() {
         img.src = data[currentIndex].photos[0].medium_url;
         document.getElementById('scientific_name').textContent = data[currentIndex].taxon.name;
         document.getElementById('common_name').textContent = data[currentIndex].taxon?.common_name?.name;
+        document.getElementById('placeGuess').textContent = data[currentIndex]?.place_guess;
 
         img.onload = function () {
           // Show the Show Answer button after the image loads
@@ -66,6 +87,8 @@ function runQuiz() {
     })
     .catch(error => {
       console.error('Error:', error);
+      // Hide the loading message
+      document.getElementById('loadingMessage').style.display = 'none';
     });
 }
 
