@@ -28,29 +28,38 @@ function runQuiz() {
   let restrictions = 'has[]=photos&has=geo';
   let qualitygrade = 'research';
   let locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`;
-  let perPage = numberOfQuestions
+  let perPage = numberOfQuestions * 100
 
   let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}`;
 
   fetch(url)
     .then(response => response.json())
     .then(data => {
-      console.log(data)
+
+      let observations = [];
+
+      for (let i = 0; i < numberOfQuestions; i++) {
+        let randomIndex = Math.floor(Math.random() * data.length);
+        let item = data.splice(randomIndex, 1)[0];
+        observations.push(item);
+      }
+
+      console.log(observations)
       // Hide the loading message
       document.getElementById('loadingMessage').style.display = 'none';
 
       // Set initial values to first observation in list
       let img = document.getElementById('myImg');
 
-      img.src = data[0]?.photos[0]?.medium_url;
+      img.src = observations[0]?.photos[0]?.medium_url;
       img.onload = function () {
         // Show the Show Answer button
         document.getElementById('showAnswerButton').style.display = 'block'
       };
 
-      document.getElementById('scientific_name').textContent = data[0].taxon.name;
-      document.getElementById('common_name').textContent = data[0].taxon?.common_name?.name;
-      document.getElementById('placeGuess').textContent = data[0]?.place_guess;
+      document.getElementById('scientific_name').textContent = observations[0].taxon.name;
+      document.getElementById('common_name').textContent = observations[0].taxon?.common_name?.name;
+      document.getElementById('placeGuess').textContent = observations[0]?.place_guess;
 
       let currentIndex = 0;
 
@@ -68,15 +77,15 @@ function runQuiz() {
         document.getElementById('answer').style.display = 'none';
         document.getElementById('nextButton').style.display = 'none'
 
-        if (currentIndex >= data.length) {
-          currentIndex = 0; // Loop back to the first image when reaching the end
+        if (currentIndex >= observations.length) {
+          document.getElementById('results').style.display = 'block' // Loop back to the first image when reaching the end
         }
 
         let img = document.getElementById('myImg');
-        img.src = data[currentIndex].photos[0].medium_url;
-        document.getElementById('scientific_name').textContent = data[currentIndex].taxon.name;
-        document.getElementById('common_name').textContent = data[currentIndex].taxon?.common_name?.name;
-        document.getElementById('placeGuess').textContent = data[currentIndex]?.place_guess;
+        img.src = observations[currentIndex].photos[0].medium_url;
+        document.getElementById('scientific_name').textContent = observations[currentIndex].taxon.name;
+        document.getElementById('common_name').textContent = observations[currentIndex].taxon?.common_name?.name;
+        document.getElementById('placeGuess').textContent = observations[currentIndex]?.place_guess;
 
         img.onload = function () {
           // Show the Show Answer button after the image loads
