@@ -94,7 +94,7 @@ function getClosestAncestryOptions(targetAncestry, targetName, allData, numberOf
 // sometimes inat returns results that aren't actually in the area
 function filterLocation(data, lat, long) {
   let coords;
-  const area = 1;
+  const area = 2;
 
   if (lat && long) {
     coords = {
@@ -128,7 +128,7 @@ function runQuiz() {
   let locationString
   
   if (latitude && longitude) {
-    let area = 1;
+    let area = 2;
     locationString = `swlat=${latitude - area}&swlong=${longitude - area}&nelat=${latitude + area}&nelong=${longitude + area}`
   } else {
     locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`
@@ -139,6 +139,9 @@ function runQuiz() {
   let iconicTaxas = Array.from(taxaElement.querySelectorAll("option:checked"), e => e.value)
     .map(taxa => `iconic_taxa[]=${taxa}`)
     .join("&");
+  if (iconicTaxas = "iconic_taxa[]=All") {
+    iconicTaxas = ""
+  }
 
   let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
 
