@@ -139,7 +139,7 @@ function runQuiz() {
   let iconicTaxas = Array.from(taxaElement.querySelectorAll("option:checked"), e => e.value)
     .map(taxa => `iconic_taxa[]=${taxa}`)
     .join("&");
-  if (iconicTaxas = "iconic_taxa[]=All") {
+  if (iconicTaxas == "iconic_taxa[]=All") {
     iconicTaxas = ""
   }
 
