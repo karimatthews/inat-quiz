@@ -9,13 +9,15 @@ function shuffle(data) {
 
 }
 
-function extractLatLongFromGoogleMaps(url) {
-  // e.g 'https://www.google.com/maps/@-25.4235407,135.5800065,5z?entry=ttu';
-  let matches = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  let latitude = matches[1];
-  let longitude = matches[2];
-  console.log(latitude, longitude)
-  return [latitude, longitude]
+function extractLatLongFromGoogleMaps(str) {
+  // Remove any surrounding brackets and whitespace
+  latLongString = latLongString.replace(/[\[\]\s]/g, '');
+
+  // Split the string by comma to extract lat and long
+  const [lat, long] = latLongString.split(',').map(Number);
+
+  // Return as an array of [lat, long]
+  return [lat, long];
 }
 
 let numberOfQuestions = document.getElementById('numberOfQuestions').value || 2;
