@@ -30,7 +30,12 @@ function runQuiz() {
   let locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`;
   let perPage = numberOfQuestions * 100
 
-  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}`;
+  let taxaElement = document.getElementById('iconicTaxa')
+  let iconicTaxas = Array.from(taxaElement.querySelectorAll("option:checked"), e => e.value)
+    .map(taxa => `iconic_taxa[]=${taxa}`)
+    .join("&")
+
+  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
 
   fetch(url)
     .then(response => response.json())
