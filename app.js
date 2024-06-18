@@ -48,7 +48,6 @@ let latitude, longitude;
 document.getElementById('maps').addEventListener('change', function() {
   console.log('Location:', this.value);
   let res = extractLatLongFromGoogleMaps(this.value)
-  debugger
   latitude = res[0]
   longitude = res[1]
 });
