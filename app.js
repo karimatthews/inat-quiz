@@ -1,5 +1,11 @@
+Array.prototype.sample = function(){
+  return this[Math.floor(Math.random()*this.length)];
+}
 
 let numberOfQuestions = 10;
+let currentIndex = 0;
+
+let multipleChoiceButtons = [...document.getElementById('multipleChoicesContainer').getElementsByTagName('button')]
 
 document.getElementById('numberOfQuestions').addEventListener('change', function () {
   console.log('Number of questions:', this.value);
@@ -19,6 +25,11 @@ document.getElementById('location').addEventListener('change', function () {
   locationId = this.value;
 });
 
+function speciesName(d) {
+  if (d.species_guess) { return `(${d.species_guess}) ${d.taxon.name}` }
+  return d.taxon.name
+}
+
 function runQuiz() {
   // Display the loading message
   document.getElementById('loadingMessage').style.display = 'block';
@@ -28,18 +39,29 @@ function runQuiz() {
   let restrictions = 'has[]=photos&has=geo';
   let qualitygrade = 'research';
   let locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`;
-  let perPage = numberOfQuestions * 100
+  let perPage = numberOfQuestions * 10 // get more values than we need for filtering and randomization
 
   let taxaElement = document.getElementById('iconicTaxa')
   let iconicTaxas = Array.from(taxaElement.querySelectorAll("option:checked"), e => e.value)
     .map(taxa => `iconic_taxa[]=${taxa}`)
     .join("&")
 
-  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
+  // for better randomization, restrict results to a subset of hours in the day (min window 5 hours)
+  let randomHourFilter = `h1=${Math.floor(Math.random() * 18).toString()}&h2=23`
+
+  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}&${randomHourFilter}`;
 
   fetch(url)
     .then(response => response.json())
-    .then(data => {
+    .then(unshuffledData => {
+
+      // since we have 10x the rows we need, let's shuffle
+      let data = unshuffledData
+        .map(value => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value)
+
+      let allNames = data.map(d => speciesName(d))
 
       let observations = [];
 
@@ -60,13 +82,44 @@ function runQuiz() {
       img.onload = function () {
         // Show the Show Answer button
         document.getElementById('showAnswerButton').style.display = 'block'
+        document.getElementById('multipleChoicesContainer').style.display = 'block'
       };
+
+      // set up multiple choice buttons
+      multipleChoiceButtons.forEach(el => {
+        el.style.backgroundColor = ''
+        
+        // Ensure the fake options don't include the real one or duplicates
+        const options = allNames.filter(name => {          
+          if (name == speciesName(observations[currentIndex])) { return false }
+          if (multipleChoiceButtons.map(x => x.textContent).indexOf(name) > 0) { return false }
+          return true
+        });
+        el.textContent = options.sample()
+
+        el.addEventListener('click', function () {
+          // reveal answers
+          multipleChoiceButtons.forEach(b => {
+            if (speciesName(observations[currentIndex]) == b.textContent) {
+              b.style.backgroundColor = 'lightgreen'
+            } else {
+              b.style.backgroundColor = 'pink'
+            }
+          })
+
+          // show the answer
+          document.getElementById('showAnswerButton').click()
+        });
+      })
+
+      // make one of the multiple choice answers correct
+      multipleChoiceButtons.sample().textContent = speciesName(observations[currentIndex])
 
       document.getElementById('scientific_name').textContent = observations[0].taxon.name;
       document.getElementById('common_name').textContent = observations[0].taxon?.common_name?.name;
       document.getElementById('placeGuess').textContent = observations[0]?.place_guess;
 
-      let currentIndex = 0;
+      currentIndex = 0;
 
       // Show answers on button click
       document.getElementById('showAnswerButton').addEventListener('click', function () {
@@ -77,6 +130,20 @@ function runQuiz() {
 
       document.getElementById('nextButton').addEventListener('click', function () {
         currentIndex++;
+
+        // reset multi choice buttons
+        multipleChoiceButtons.forEach(el => {
+          el.style.backgroundColor = ''
+          const options = allNames.filter(name => {          
+            if (name == speciesName(observations[currentIndex])) { return false }
+            if (multipleChoiceButtons.map(x => x.textContent).indexOf(name) > 0) { return false }
+            return true
+          });
+          el.textContent = options.sample()
+        })
+
+        // make one of the multiple choice answers correct
+        multipleChoiceButtons.sample().textContent = speciesName(observations[currentIndex])
 
         // Hide the answers
         document.getElementById('answer').style.display = 'none';
