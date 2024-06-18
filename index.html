@@ -4,6 +4,15 @@
   <title>
     Inat Quiz
   </title>
+
+  <style>
+    .grey-square {
+      background-color: grey;
+      width: 500px; /* Adjust the size as needed */
+      height: 300px;
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
@@ -15,6 +24,7 @@
     <div>
       How many questions?
       <select id="numberOfQuestions">
+        <option value=2>2</option>
         <option value=10>10</option>
         <option value=20>20</option>
         <option value=30>30</option>
@@ -24,8 +34,7 @@
     <div>
       Choose a location
       <select id="location">
-        <option value="">Choose a location</option>
-        <option value="melbourne">Melbourne</option>
+        <option value="melbourne" selected="selected">Melbourne</option>
         <option value="wilsonsProm">Wilson's Promontory</option>
         <option value="victoria">Victoria</option>
         <option value="australia">Australia</option>
@@ -36,11 +45,12 @@
       Choose an iconic taxa
       <select multiple id="iconicTaxa">
       <!-- Allowed values: Plantae | Animalia | Mollusca | Reptilia | Aves | Amphibia | Actinopterygii | Mammalia | Insecta | Arachnida | Fungi | Protozoa | Chromista | unknown -->
+      <option value="Aves" selected="selected">Birds</option>
+
       <option value="Plantae">Plants</option>
       <option value="Animalia">Animals</option>
       <option value="Mollusca">Mollusks</option>
       <option value="Reptilia">Reptiles</option>
-      <option value="Aves">Birds</option>
       <option value="Amphibia">Amphibians</option>
       <option value="Actinopterygii">Fish</option>
       <option value="Mammalia">Mammals</option>
@@ -60,31 +70,33 @@
 
   </div>
 
-  <div id="loadingMessage" style="display: none;">Creating quiz...</div>
-  <div>
-    <img id="myImg" src="">
+  <div id="quiz">
+    <div id="loadingMessage" style="display: none;">Creating quiz...</div>
+    <div>
+      <img id="myImg" src="">
+    </div>
+
+    <div id="multipleChoicesContainer" style="display: none;">
+      <button id="choice1"></button>
+      <button id="choice2"></button>
+      <button id="choice3"></button>
+      <button id="choice4"></button>
+    </div>
+
+
+    <button id="showAnswerButton" style="display: none;">Show Answer</button>
+
+    <div id="answer" style="display: none;">
+      <div id="scientific_name" style="font-style: italic;"></div>
+      <div id="common_name"></div>
+      <div id="placeGuess"></div>
+    </div>
+
+    <div>
+      <button id='nextButton' style="display: none;">Next</button>
+    </div>
   </div>
-
-  <div id="multipleChoicesContainer" style="display: none;">
-    <button id="choice1"></button>
-    <button id="choice2"></button>
-    <button id="choice3"></button>
-    <button id="choice4"></button>
-  </div>
-
-
-  <button id="showAnswerButton" style="display: none;">Show Answer</button>
-
-  <div id="answer" style="display: none;">
-    <div id="scientific_name" style="font-style: italic;"></div>
-    <div id="common_name"></div>
-    <div id="placeGuess"></div>
-  </div>
-
-  <div>
-    <button id='nextButton' style="display: none;">Next</button>
-  </div>
-
+  
   <div id="results" style="display: none;">
   </div>
 
