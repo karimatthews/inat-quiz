@@ -1,16 +1,93 @@
+<!DOCTYPE html>
 <html>
 
 <head>
-  <title>
-    Inat Quiz
-  </title>
+  <title>Inat Quiz</title>
 
   <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f5f5f5;
+    }
+
+    header {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px 0;
+      text-align: center;
+    }
+
+    #setup, #quiz, #results {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px 0;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #setup div, #quiz div {
+      margin: 10px 0;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #myImg {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    #multipleChoicesContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #multipleChoicesContainer button {
+      flex: 1 1 calc(50% - 10px);
+    }
+
     .grey-square {
       background-color: grey;
-      width: 500px; /* Adjust the size as needed */
+      width: 100%;
       height: 300px;
       display: block;
+    }
+
+    @media (max-width: 600px) {
+      #multipleChoicesContainer button {
+        flex: 1 1 100%;
+      }
     }
   </style>
 </head>
@@ -24,17 +101,17 @@
     <div>
       How many questions?
       <select id="numberOfQuestions">
-        <option value=2>2</option>
-        <option value=10>10</option>
-        <option value=20>20</option>
-        <option value=30>30</option>
+        <option value="2">2</option>
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
       </select>
     </div>
 
     <div>
       Choose a location
       <select id="location">
-        <option value="melbourne" selected="selected">Melbourne</option>
+        <option value="melbourne" selected>Melbourne</option>
         <option value="wilsonsProm">Wilson's Promontory</option>
         <option value="victoria">Victoria</option>
         <option value="australia">Australia</option>
@@ -42,38 +119,42 @@
     </div>
 
     <div>
+      Paste in a position from Google Maps
+      <input id="maps">
+    </div>
+
+    <div>
       Choose an iconic taxa
       <select multiple id="iconicTaxa">
-      <!-- Allowed values: Plantae | Animalia | Mollusca | Reptilia | Aves | Amphibia | Actinopterygii | Mammalia | Insecta | Arachnida | Fungi | Protozoa | Chromista | unknown -->
-      <option value="Aves" selected="selected">Birds</option>
-
-      <option value="Plantae">Plants</option>
-      <option value="Animalia">Animals</option>
-      <option value="Mollusca">Mollusks</option>
-      <option value="Reptilia">Reptiles</option>
-      <option value="Amphibia">Amphibians</option>
-      <option value="Actinopterygii">Fish</option>
-      <option value="Mammalia">Mammals</option>
-      <option value="Insecta">Insects</option>
-      <option value="Arachnida">Arachnids</option>
-      <option value="Fungi">Fungi</option>
-      <option value="Protozoa">Protozoa</option>
-      <option value="Chromista">Chromista</option>
-      <option value="unknown">Unknown</option>
+        <option value="Aves" selected>Birds</option>
+        <option value="Plantae">Plants</option>
+        <option value="Animalia">Animals</option>
+        <option value="Mollusca">Mollusks</option>
+        <option value="Reptilia">Reptiles</option>
+        <option value="Amphibia">Amphibians</option>
+        <option value="Actinopterygii">Fish</option>
+        <option value="Mammalia">Mammals</option>
+        <option value="Insecta">Insects</option>
+        <option value="Arachnida">Arachnids</option>
+        <option value="Fungi">Fungi</option>
+        <option value="Protozoa">Protozoa</option>
+        <option value="Chromista">Chromista</option>
+        <option value="unknown">Unknown</option>
       </select>
-    </div>
     </div>
 
     <div>
       <button id="startQuiz">Start Quiz</button>
     </div>
-
   </div>
 
-  <div id="quiz">
+  <div id="quiz" style="display: none;">
     <div id="loadingMessage" style="display: none;">Creating quiz...</div>
+
+    <div id="counter"></div>
+
     <div>
-      <img id="myImg" src="">
+      <img id="myImg" class="grey-square" style="display: none;" src="">
     </div>
 
     <div id="multipleChoicesContainer" style="display: none;">
@@ -83,8 +164,7 @@
       <button id="choice4"></button>
     </div>
 
-
-    <button id="showAnswerButton" style="display: none;">Show Answer</button>
+    <button id="showAnswerButton" style="display: none; background-color:grey">Show Answer</button>
 
     <div id="answer" style="display: none;">
       <div id="scientific_name" style="font-style: italic;"></div>
@@ -93,15 +173,14 @@
     </div>
 
     <div>
-      <button id='nextButton' style="display: none;">Next</button>
+      <button id="nextButton" style="display: none;">Next</button>
     </div>
   </div>
-  
+
   <div id="results" style="display: none;">
   </div>
 
-
+  <script src="app.js"></script>
 </body>
-<script src="app.js"></script>
 
 </html>

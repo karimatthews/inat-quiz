@@ -9,7 +9,16 @@ function shuffle(data) {
 
 }
 
-let numberOfQuestions = 2;
+function extractLatLongFromGoogleMaps(url) {
+  // e.g 'https://www.google.com/maps/@-25.4235407,135.5800065,5z?entry=ttu';
+  let matches = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  let latitude = matches[1];
+  let longitude = matches[2];
+  console.log(latitude, longitude)
+  return [latitude, longitude]
+}
+
+let numberOfQuestions = document.getElementById('numberOfQuestions').value || 2;
 let currentIndex = 0;
 let results = [];
 
@@ -27,10 +36,19 @@ let locationCoordinates = {
   australia: { swlat: -44.32569739068832, swlong: 111.81297712054247, nelat: -11.524606117947133, nelong: 152.64407854033962 }
 };
 
-let locationId = 'melbourne';
+let locationId = document.getElementById('location').value || 'melbourne';
 document.getElementById('location').addEventListener('change', function() {
   console.log('Location:', this.value);
   locationId = this.value;
+});
+
+let latitude, longitude;
+document.getElementById('maps').addEventListener('change', function() {
+  console.log('Location:', this.value);
+  let res = extractLatLongFromGoogleMaps(this.value)
+  debugger
+  latitude = res[0]
+  longitude = res[1]
 });
 
 function speciesName(d) {
@@ -72,7 +90,33 @@ function getClosestAncestryOptions(targetAncestry, targetName, allData, numberOf
   return closestOptions;
 }
 
+// sometimes inat returns results that aren't actually in the area
+function filterLocation(data, lat, long) {
+  let coords;
+  const area = 1;
+
+  if (lat && long) {
+    coords = {
+      swlat: lat - area,
+      swlong: long - area,
+      nelat: lat + area,
+      nelong: long + area
+    };
+  } else {
+    coords = locationCoordinates[locationId];
+  }
+
+  return data.filter(d => {
+    return d.latitude >= coords.swlat &&
+           d.latitude <= coords.nelat &&
+           d.longitude >= coords.swlong &&
+           d.longitude <= coords.nelong;
+  });
+}
+
 function runQuiz() {
+  document.getElementById('quiz').style.display = 'block';
+
   document.getElementById('loadingMessage').style.display = 'block';
   results = []
 
@@ -80,23 +124,32 @@ function runQuiz() {
   let endpoint = '/observations';
   let restrictions = 'has[]=photos&has=geo';
   let qualitygrade = 'research';
-  let locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`;
-  let perPage = numberOfQuestions * 10;
+  let locationString
+  
+  if (latitude && longitude) {
+    let area = 1;
+    locationString = `swlat=${latitude - area}&swlong=${longitude - area}&nelat=${latitude + area}&nelong=${longitude + area}`
+  } else {
+    locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`
+  }
+  let perPage = numberOfQuestions * 50;
 
   let taxaElement = document.getElementById('iconicTaxa');
   let iconicTaxas = Array.from(taxaElement.querySelectorAll("option:checked"), e => e.value)
     .map(taxa => `iconic_taxa[]=${taxa}`)
     .join("&");
 
-  // let randomHourFilter = `h1=${Math.floor(Math.random() * 8).toString()}&h2=23`;
-
   let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
 
   fetch(url)
     .then(response => response.json())
     .then(unshuffledData => {
+      unshuffledData = filterLocation(unshuffledData, latitude, longitude, locationCoordinates)
       let data = shuffle(unshuffledData)
-      let allNames = data.map(d => speciesName(d));
+
+      if (data.length < numberOfQuestions) {
+        throw `Expected at least ${numberOfQuestions} observations but got ${data}`
+      }
 
       let observations = [];
       for (let i = 0; i < numberOfQuestions; i++) {
@@ -107,8 +160,12 @@ function runQuiz() {
 
       console.log(observations);
       document.getElementById('loadingMessage').style.display = 'none';
+      document.getElementById('myImg').style.display = 'block'
 
       function setupQuestion(index) {
+
+        document.getElementById('counter').textContent = `Question ${index + 1} of ${numberOfQuestions}`;
+
         let img = document.getElementById('myImg');
         img.src = observations[index]?.photos[0]?.medium_url;
         img.onload = function() {
