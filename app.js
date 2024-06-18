@@ -9,7 +9,7 @@ function shuffle(data) {
 
 }
 
-function extractLatLongFromGoogleMaps(str) {
+function extractLatLongFromGoogleMaps(latLongString) {
   // Remove any surrounding brackets and whitespace
   latLongString = latLongString.replace(/[\[\]\s]/g, '');
 
