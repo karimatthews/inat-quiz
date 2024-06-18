@@ -2,6 +2,8 @@
 <html>
 
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Inat Quiz</title>
 
   <style>
@@ -62,7 +64,7 @@
 
     #myImg {
       width: 100%;
-      max-height: 300px;
+      max-height: 400px;
       object-fit: cover;
       border-radius: 4px;
     }
@@ -84,9 +86,13 @@
       display: block;
     }
 
-    @media (max-width: 600px) {
+    @media only screen and (max-width: 600px) {
       #multipleChoicesContainer button {
         flex: 1 1 100%;
+      }
+
+      #setup, #quiz, #results {
+        max-width: 100%;
       }
     }
   </style>
