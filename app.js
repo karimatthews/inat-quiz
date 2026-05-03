@@ -34,7 +34,7 @@ document.getElementById('numberOfQuestions').addEventListener('change', function
 let locationCoordinates = {
   melbourne: { swlat: -38.015056522315, swlong: 144.5385483707626, nelat: -37.58960704906771, nelong: 145.4644329517832 },
   wilsonsProm: { swlat: -39.15380623139274, swlong: 144.56, nelat: -38.7739805810115, nelong: 147.6 },
-  victoria: { swlat: -39.08272063128122, swlong: 140.55699723939387, nelat: -39.08272063128122, nelong: 140.55699723939387 },
+  victoria: { swlat: -39.2, swlong: 140.5, nelat: -33.9, nelong: 150.1 },
   australia: { swlat: -44.32569739068832, swlong: 111.81297712054247, nelat: -11.524606117947133, nelong: 152.64407854033962 }
 };
 
@@ -57,6 +57,40 @@ function speciesName(d) {
     return `(${d.species_guess}) ${d.taxon.name}`;
   }
   return d.taxon.name;
+}
+
+function commonName(d) {
+  return d.taxon?.common_name?.name || d.taxon?.preferred_common_name || '';
+}
+
+function observationLatitude(d) {
+  if (d.latitude) {
+    return Number(d.latitude);
+  }
+  if (d.location) {
+    return Number(d.location.split(',')[0]);
+  }
+  return d.geojson?.coordinates?.[1];
+}
+
+function observationLongitude(d) {
+  if (d.longitude) {
+    return Number(d.longitude);
+  }
+  if (d.location) {
+    return Number(d.location.split(',')[1]);
+  }
+  return d.geojson?.coordinates?.[0];
+}
+
+function observationPhotoUrl(d) {
+  let photo = d.photos?.[0];
+
+  if (!photo) {
+    return '';
+  }
+
+  return photo.medium_url || photo.url?.replace(/\/square\.(jpg|jpeg|png)$/i, '/medium.$1') || '';
 }
 
 function ancestrySimilarity(ancestry1, ancestry2) {
@@ -108,10 +142,13 @@ function filterLocation(data, lat, long) {
   }
 
   return data.filter(d => {
-    return d.latitude >= coords.swlat &&
-           d.latitude <= coords.nelat &&
-           d.longitude >= coords.swlong &&
-           d.longitude <= coords.nelong;
+    let lat = observationLatitude(d);
+    let long = observationLongitude(d);
+
+    return lat >= coords.swlat &&
+           lat <= coords.nelat &&
+           long >= coords.swlong &&
+           long <= coords.nelong;
   });
 }
 
@@ -121,17 +158,17 @@ function runQuiz() {
   document.getElementById('loadingMessage').style.display = 'block';
   results = []
 
-  let baseUrl = 'https://inaturalist.org';
+  let baseUrl = 'https://api.inaturalist.org/v1';
   let endpoint = '/observations';
-  let restrictions = 'has[]=photos&has=geo';
+  let restrictions = 'photos=true&geo=true';
   let qualitygrade = 'research';
   let locationString
   
   if (latitude && longitude) {
     let area = 2;
-    locationString = `swlat=${latitude - area}&swlong=${longitude - area}&nelat=${latitude + area}&nelong=${longitude + area}`
+    locationString = `swlat=${latitude - area}&swlng=${longitude - area}&nelat=${latitude + area}&nelng=${longitude + area}`
   } else {
-    locationString = `swlat=${locationCoordinates[locationId].swlat}&swlong=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelong=${locationCoordinates[locationId].nelong}`
+    locationString = `swlat=${locationCoordinates[locationId].swlat}&swlng=${locationCoordinates[locationId].swlong}&nelat=${locationCoordinates[locationId].nelat}&nelng=${locationCoordinates[locationId].nelong}`
   }
   let perPage = numberOfQuestions * 50;
 
@@ -143,12 +180,18 @@ function runQuiz() {
     iconicTaxas = ""
   }
 
-  let url = `${baseUrl}${endpoint}.json?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
+  let url = `${baseUrl}${endpoint}?${restrictions}&quality_grade=${qualitygrade}&${locationString}&per_page=${perPage}&${iconicTaxas}`;
 
   fetch(url)
-    .then(response => response.json())
-    .then(unshuffledData => {
-      unshuffledData = filterLocation(unshuffledData, latitude, longitude, locationCoordinates)
+    .then(response => {
+      if (!response.ok) {
+        throw `iNaturalist returned ${response.status}`;
+      }
+      return response.json();
+    })
+    .then(responseData => {
+      let unshuffledData = responseData.results || responseData;
+      unshuffledData = filterLocation(unshuffledData, latitude, longitude)
       let data = shuffle(unshuffledData)
 
       if (data.length < numberOfQuestions) {
@@ -171,7 +214,7 @@ function runQuiz() {
         document.getElementById('counter').textContent = `Question ${index + 1} of ${numberOfQuestions}`;
 
         let img = document.getElementById('myImg');
-        img.src = observations[index]?.photos[0]?.medium_url;
+        img.src = observationPhotoUrl(observations[index]);
         img.onload = function() {
           img.classList.remove('grey-square'); // Remove the grey square class
           document.getElementById('showAnswerButton').style.display = 'block';
@@ -201,7 +244,7 @@ function runQuiz() {
         });
 
         document.getElementById('scientific_name').textContent = observations[index].taxon.name;
-        document.getElementById('common_name').textContent = observations[index].taxon?.common_name?.name;
+        document.getElementById('common_name').textContent = commonName(observations[index]);
         document.getElementById('placeGuess').textContent = observations[index]?.place_guess;
       }
 
@@ -240,7 +283,7 @@ function runQuiz() {
     })
     .catch(error => {
       console.error('Error:', error);
-      document.getElementById('loadingMessage').style.display = 'none';
+      document.getElementById('loadingMessage').textContent = `Could not create quiz: ${error}`;
     });
 }
 
