@@ -1,7 +1,3 @@
-Array.prototype.sample = function() {
-  return this[Math.floor(Math.random() * this.length)];
-};
-
 function shuffle(data) {
     return data.map(value => ({ value, sort: Math.random() }))
         .sort((a, b) => a.sort - b.sort)
@@ -10,13 +6,21 @@ function shuffle(data) {
 }
 
 function extractLatLongFromGoogleMaps(latLongString) {
-  // Remove any surrounding brackets and whitespace
-  latLongString = latLongString.replace(/[\[\]\s]/g, '');
+  let decimalDegrees = '-?\\d+(?:\\.\\d+)?';
+  let coordinatePair = new RegExp(`(${decimalDegrees})\\s*,\\s*(${decimalDegrees})`);
+  let match = latLongString.match(coordinatePair);
 
-  // Split the string by comma to extract lat and long
-  const [lat, long] = latLongString.split(',').map(Number);
+  if (!match) {
+    return [undefined, undefined];
+  }
 
-  // Return as an array of [lat, long]
+  let lat = Number(match[1]);
+  let long = Number(match[2]);
+
+  if (lat < -90 || lat > 90 || long < -180 || long > 180) {
+    return [undefined, undefined];
+  }
+
   return [lat, long];
 }
 
@@ -38,10 +42,21 @@ let locationCoordinates = {
   australia: { swlat: -44.32569739068832, swlong: 111.81297712054247, nelat: -11.524606117947133, nelong: 152.64407854033962 }
 };
 
+let locationLabels = {
+  melbourne: 'Melbourne, VIC, Australia',
+  wilsonsProm: "Wilson's Promontory, VIC, Australia",
+  victoria: 'Victoria, Australia',
+  australia: 'Australia'
+};
+
 let locationId = document.getElementById('location').value || 'melbourne';
 document.getElementById('location').addEventListener('change', function() {
   console.log('Location:', this.value);
   locationId = this.value;
+  latitude = undefined;
+  longitude = undefined;
+  document.getElementById('maps').value = '';
+  document.getElementById('placeBar').textContent = locationLabels[locationId];
 });
 
 let latitude, longitude;
@@ -50,7 +65,12 @@ document.getElementById('maps').addEventListener('change', function() {
   let res = extractLatLongFromGoogleMaps(this.value)
   latitude = res[0]
   longitude = res[1]
+  document.getElementById('placeBar').textContent = hasCustomLocation() ? `${latitude}, ${longitude}` : locationLabels[locationId];
 });
+
+function hasCustomLocation() {
+  return Number.isFinite(latitude) && Number.isFinite(longitude);
+}
 
 function speciesName(d) {
   if (d.species_guess) {
@@ -130,7 +150,7 @@ function filterLocation(data, lat, long) {
   let coords;
   const area = 2;
 
-  if (lat && long) {
+  if (Number.isFinite(lat) && Number.isFinite(long)) {
     coords = {
       swlat: lat - area,
       swlong: long - area,
@@ -153,9 +173,12 @@ function filterLocation(data, lat, long) {
 }
 
 function runQuiz() {
+  document.body.classList.remove('setup-mode');
   document.getElementById('quiz').style.display = 'block';
 
   document.getElementById('loadingMessage').style.display = 'block';
+  document.getElementById('photoPlaceholder').style.display = 'none';
+  currentIndex = 0;
   results = []
 
   let baseUrl = 'https://api.inaturalist.org/v1';
@@ -164,7 +187,7 @@ function runQuiz() {
   let qualitygrade = 'research';
   let locationString
   
-  if (latitude && longitude) {
+  if (hasCustomLocation()) {
     let area = 2;
     locationString = `swlat=${latitude - area}&swlng=${longitude - area}&nelat=${latitude + area}&nelng=${longitude + area}`
   } else {
@@ -210,16 +233,23 @@ function runQuiz() {
       document.getElementById('myImg').style.display = 'block'
 
       function setupQuestion(index) {
+        let answered = false;
 
         document.getElementById('counter').textContent = `Question ${index + 1} of ${numberOfQuestions}`;
 
         let img = document.getElementById('myImg');
-        img.src = observationPhotoUrl(observations[index]);
+        img.classList.add('grey-square');
+        img.onload = null;
+        img.onerror = null;
         img.onload = function() {
           img.classList.remove('grey-square'); // Remove the grey square class
-          document.getElementById('showAnswerButton').style.display = 'block';
-          document.getElementById('multipleChoicesContainer').style.display = 'block';
         };
+        img.onerror = function() {
+          img.classList.add('grey-square');
+        };
+        img.src = observationPhotoUrl(observations[index]);
+        document.getElementById('showAnswerButton').style.display = 'block';
+        document.getElementById('multipleChoicesContainer').style.display = 'block';
 
         let targetAncestry = observations[index].taxon.ancestry;
         let closestOptions = getClosestAncestryOptions(targetAncestry, speciesName(observations[index]), data, multipleChoiceButtons().length - 1);
@@ -231,12 +261,29 @@ function runQuiz() {
         multipleChoiceButtons().forEach(el => el.outerHTML += "") // tear down element to clear all previous event listeners          
 
         multipleChoiceButtons().forEach((el, i) => {
-          el.style.backgroundColor = ''
-          el.textContent = multipleChoices[i]
+          el.classList.remove('choice-correct', 'choice-wrong', 'choice-selected');
+          el.disabled = false;
+          el.textContent = multipleChoices[i] || ''
+          el.style.display = multipleChoices[i] ? '' : 'none'
 
           el.addEventListener('click', function() {
+            if (answered) {
+              return;
+            }
+
+            answered = true;
             multipleChoiceButtons().forEach(b => {
-              b.style.backgroundColor = speciesName(observations[index]) == b.textContent ? 'lightgreen' : 'pink';
+              let isCorrect = speciesName(observations[index]) == b.textContent;
+              if (isCorrect) {
+                b.classList.add('choice-correct');
+              }
+              if (b == el && !isCorrect) {
+                b.classList.add('choice-wrong');
+              }
+              if (b == el) {
+                b.classList.add('choice-selected');
+              }
+              b.disabled = true;
             });
             results.push({ correctAnswer: speciesName(observations[index]), yourAnswer: el.textContent })
             document.getElementById('showAnswerButton').click();
@@ -269,15 +316,33 @@ function runQuiz() {
           document.getElementById('answer').style.display = 'none';
           document.getElementById('nextButton').style.display = 'none';
         } else {
+          document.body.classList.add('results-mode');
           document.getElementById('quiz').style.display = 'none';
           document.getElementById('results').style.display = 'block';
           console.log(results)
-          document.getElementById('results').innerHTML = `<p>You got ${results.filter(x => x.yourAnswer == x.correctAnswer).length} out of ${results.length} correct</p>`
-          document.getElementById('results').innerHTML += results.map((r) => {
-            if (r.yourAnswer == r.correctAnswer) { return "" }
-            return `<p>You said ${r.yourAnswer}, but it was a ${r.correctAnswer}</p>`
-          }).join("")
-          document.getElementById('results').innerHTML += "<p><button onClick='window.location.reload();'>Start another quiz</button></p>"
+          let resultsElement = document.getElementById('results');
+          resultsElement.replaceChildren();
+
+          let score = document.createElement('p');
+          score.textContent = `You got ${results.filter(x => x.yourAnswer == x.correctAnswer).length} out of ${results.length} correct`;
+          resultsElement.appendChild(score);
+
+          results.forEach((r) => {
+            if (r.yourAnswer == r.correctAnswer) { return }
+
+            let correction = document.createElement('p');
+            correction.textContent = `You said ${r.yourAnswer}, but it was a ${r.correctAnswer}`;
+            resultsElement.appendChild(correction);
+          });
+
+          let restartContainer = document.createElement('p');
+          let restartButton = document.createElement('button');
+          restartButton.textContent = 'Start another quiz';
+          restartButton.addEventListener('click', function() {
+            window.location.reload();
+          });
+          restartContainer.appendChild(restartButton);
+          resultsElement.appendChild(restartContainer);
         }
       });
     })

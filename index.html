@@ -2,195 +2,536 @@
 <html>
 
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Inat Quiz</title>
 
   <style>
+    :root {
+      --green: #3f7f46;
+      --red: #a33a2d;
+      --ink: #27231f;
+      --muted: #6d675f;
+      --line: #dedbd5;
+      --paper: #fbfaf7;
+      --panel: #ffffff;
+      --field: #dfddd5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      min-height: 100vh;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background-color: #f5f5f5;
+      background: var(--field);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     header {
-      width: 100%;
-      background-color: #4CAF50;
-      color: white;
-      padding: 15px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 78px;
+      padding: 0 32px 0 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .brand span:first-child {
+      color: var(--green);
+    }
+
+    body.setup-mode #appShell,
+    body.results-mode #appShell {
+      display: block;
+      min-height: calc(100vh - 78px);
+      padding: 44px 20px;
+    }
+
+    body.setup-mode #photoStage,
+    body.results-mode #photoStage {
+      display: none;
+    }
+
+    body.setup-mode #sidePanel,
+    body.results-mode #sidePanel {
+      width: min(100%, 520px);
+      min-height: auto;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--paper);
+    }
+
+    body.setup-mode #placeBar,
+    body.results-mode #placeBar {
+      border-radius: 4px 4px 0 0;
+    }
+
+    #appShell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 510px;
+      min-height: calc(100vh - 78px);
+    }
+
+    #photoStage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 78px);
+      padding: 0 46px;
+      background: #d7d5ce;
+    }
+
+    #photoFrame {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: min(100%, 1360px);
+      height: calc(100vh - 78px);
+      overflow: hidden;
+      background: #81afe4;
+    }
+
+    #photoPlaceholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      background:
+        linear-gradient(#7fb1ec 0 58%, #c8d7bc 58% 100%);
+      color: rgba(39, 35, 31, 0.65);
+      font-size: 24px;
+      font-weight: 700;
       text-align: center;
     }
 
-    #setup, #quiz, #results {
-      width: 90%;
-      max-width: 600px;
-      margin: 20px 0;
-      padding: 20px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    #setup div, #quiz div {
-      margin: 10px 0;
-    }
-
-    select, input {
+    #myImg {
+      position: relative;
+      z-index: 1;
+      display: none;
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
+      height: 100%;
+      object-fit: contain;
+      background: #d7d5ce;
+    }
+
+    .grey-square {
+      background: #d7d5ce;
+    }
+
+    #sidePanel {
+      min-height: calc(100vh - 78px);
+      border-left: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    #placeBar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 54px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--line);
+      background: #ebe9e3;
+      color: #3e3934;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    #placeBar::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(63, 127, 70, 0.16);
+    }
+
+    #setup,
+    #quiz,
+    #results {
+      padding: 18px 20px 28px;
+    }
+
+    .panelTitle,
+    #counter {
+      margin: 0 0 20px;
+      color: #0e0d0c;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .field {
+      margin: 0 0 18px;
+    }
+
+    label,
+    .fieldLabel {
+      display: block;
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    select,
+    input {
+      width: 100%;
+      min-height: 43px;
+      padding: 8px 10px;
+      border: 1px solid #cfcac1;
       border-radius: 4px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    select[multiple] {
+      min-height: 168px;
     }
 
     button {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
+      min-height: 42px;
+      border: 1px solid #cfd8e0;
       border-radius: 4px;
+      background: #fff;
+      color: #496f8f;
       cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      text-align: left;
     }
 
-    button:hover {
-      background-color: #45a049;
+    button:hover:not(:disabled) {
+      border-color: #9fb5c7;
+      background: #f8fbfd;
     }
 
-    #myImg {
-      width: 100%;
-      max-height: 400px;
-      object-fit: cover;
-      border-radius: 4px;
+    button:disabled {
+      cursor: default;
+    }
+
+    #startQuiz {
+      min-height: 48px;
+      padding: 0 14px;
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+      text-align: center;
+    }
+
+    #loadingMessage {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    #questionHeader {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    #counter {
+      margin: 0;
+    }
+
+    #homeLink {
+      flex: 0 0 auto;
+      color: #496f8f;
+      font-size: 18px;
+      font-weight: 700;
+      text-decoration: none;
     }
 
     #multipleChoicesContainer {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      display: block;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #fff;
     }
 
     #multipleChoicesContainer button {
-      flex: 1 1 calc(50% - 10px);
-    }
-
-    #maps { 
-      width: 95%;
-    }
-
-    .grey-square {
-      background-color: grey;
-      width: 100%;
-      height: 300px;
+      position: relative;
       display: block;
+      min-height: 56px;
+      padding: 0 12px 0 52px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      color: #332f2b;
+      font-size: 20px;
+      text-align: left;
     }
 
-    @media only screen and (max-width: 600px) {
-      #multipleChoicesContainer button {
-        flex: 1 1 100%;
+    #multipleChoicesContainer button:last-child {
+      border-bottom: 0;
+    }
+
+    #multipleChoicesContainer button.choice-correct {
+      background: #eef6ed;
+      color: #2f6f38;
+    }
+
+    #multipleChoicesContainer button.choice-selected.choice-wrong {
+      background: #fbefed;
+      color: #9b332b;
+    }
+
+    #multipleChoicesContainer button.choice-correct::before,
+    #multipleChoicesContainer button.choice-selected.choice-wrong::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    #multipleChoicesContainer button.choice-correct::before {
+      background: #dcefdc;
+    }
+
+    #multipleChoicesContainer button.choice-selected.choice-wrong::before {
+      background: #f4d9d5;
+    }
+
+    #multipleChoicesContainer button.choice-correct::after,
+    #multipleChoicesContainer button.choice-selected.choice-wrong::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 24px;
+      width: 9px;
+      height: 14px;
+    }
+
+    #multipleChoicesContainer button.choice-correct::after {
+      margin-top: -9px;
+      border-right: 3px solid #2f6f38;
+      border-bottom: 3px solid #2f6f38;
+      transform: rotate(45deg);
+    }
+
+    #multipleChoicesContainer button.choice-selected.choice-wrong::after {
+      width: 14px;
+      height: 14px;
+      margin-top: -7px;
+      margin-left: -3px;
+      background:
+        linear-gradient(45deg, transparent 43%, #9b332b 43%, #9b332b 57%, transparent 57%),
+        linear-gradient(-45deg, transparent 43%, #9b332b 43%, #9b332b 57%, transparent 57%);
+    }
+
+    #showAnswerButton,
+    #nextButton {
+      width: auto;
+      min-height: 42px;
+      margin-top: 22px;
+      padding: 0 13px;
+      text-align: center;
+    }
+
+    #nextButton {
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+    }
+
+    #answer {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    #scientific_name {
+      color: var(--ink);
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    #common_name {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    #results p {
+      margin: 0 0 14px;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+
+    #results p:first-child {
+      color: #0e0d0c;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    @media only screen and (max-width: 900px) {
+      header {
+        min-height: 64px;
+        padding: 0 16px;
       }
 
-      #setup, #quiz, #results {
-        max-width: 100%;
+      .brand {
+        font-size: 34px;
+      }
+
+      #appShell {
+        grid-template-columns: 1fr;
+      }
+
+      #photoStage,
+      #photoFrame {
+        min-height: 42vh;
+        height: 42vh;
+      }
+
+      #photoStage {
+        padding: 0;
+      }
+
+      #sidePanel {
+        min-height: auto;
+        border-left: 0;
       }
     }
   </style>
 </head>
 
-<body>
+<body class="setup-mode">
   <header>
-    <h1>Welcome to Inat Quiz!</h1>
+    <div class="brand" aria-label="iNat Quiz">
+      <span>i</span><span>Nat Quiz</span>
+    </div>
   </header>
 
-  <div id="setup">
-    <div>
-      How many questions?
-      <select id="numberOfQuestions">
-        <option value="2">2</option>
-        <option value="10" selected>10</option>
-        <option value="20">20</option>
-        <option value="30">30</option>
-      </select>
-    </div>
+  <main id="appShell">
+    <section id="photoStage" aria-label="Observation photo">
+      <div id="photoFrame">
+        <div id="photoPlaceholder">Choose a place and start a quiz.</div>
+        <img id="myImg" class="grey-square" src="" alt="">
+      </div>
+    </section>
 
-    <div>
-      Choose a location
-      <select id="location">
-        <option value="melbourne" selected>Melbourne</option>
-        <option value="wilsonsProm">Wilson's Promontory</option>
-        <option value="victoria">Victoria</option>
-        <option value="australia">Australia</option>
-      </select>
-    </div>
+    <aside id="sidePanel">
+      <div id="placeBar">Melbourne, VIC, Australia</div>
 
-    <div>
-      Paste in a position from Google Maps
-      <input id="maps">
-    </div>
+      <div id="setup">
+        <h1 class="panelTitle">What organism is this?</h1>
 
-    <div>
-      Choose a type of creature
-      <select multiple id="iconicTaxa">
-        <option value="All" selected>All Taxa</option>
+        <div class="field">
+          <label for="numberOfQuestions">How many questions?</label>
+          <select id="numberOfQuestions">
+            <option value="2">2</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+          </select>
+        </div>
 
-        <option value="Aves">Birds</option>
-        <option value="Plantae">Plants</option>
-        <option value="Animalia">Animals</option>
-        <option value="Mollusca">Mollusks</option>
-        <option value="Reptilia">Reptiles</option>
-        <option value="Amphibia">Amphibians</option>
-        <option value="Actinopterygii">Fish</option>
-        <option value="Mammalia">Mammals</option>
-        <option value="Insecta">Insects</option>
-        <option value="Arachnida">Arachnids</option>
-        <option value="Fungi">Fungi</option>
-        <option value="Protozoa">Protozoa</option>
-        <option value="Chromista">Chromista</option>
-        <option value="unknown">Unknown</option>
-      </select>
-    </div>
+        <div class="field">
+          <label for="location">Choose a location</label>
+          <select id="location">
+            <option value="melbourne" selected>Melbourne</option>
+            <option value="wilsonsProm">Wilson's Promontory</option>
+            <option value="victoria">Victoria</option>
+            <option value="australia">Australia</option>
+          </select>
+        </div>
 
-    <div>
-      <button id="startQuiz">Start Quiz</button>
-    </div>
-  </div>
+        <div class="field">
+          <label for="maps">Paste a Google Maps position</label>
+          <input id="maps" placeholder="-37.8136, 144.9631">
+        </div>
 
-  <div id="quiz" style="display: none;">
-    <div id="loadingMessage" style="display: none;">Creating quiz...</div>
+        <div class="field">
+          <span class="fieldLabel">Choose a type</span>
+          <select multiple id="iconicTaxa">
+            <option value="All" selected>All Taxa</option>
+            <option value="Aves">Birds</option>
+            <option value="Plantae">Plants</option>
+            <option value="Animalia">Animals</option>
+            <option value="Mollusca">Mollusks</option>
+            <option value="Reptilia">Reptiles</option>
+            <option value="Amphibia">Amphibians</option>
+            <option value="Actinopterygii">Fish</option>
+            <option value="Mammalia">Mammals</option>
+            <option value="Insecta">Insects</option>
+            <option value="Arachnida">Arachnids</option>
+            <option value="Fungi">Fungi</option>
+            <option value="Protozoa">Protozoa</option>
+            <option value="Chromista">Chromista</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
 
-    <div id="counter"></div>
+        <button id="startQuiz">Start Quiz</button>
+      </div>
 
-    <div>
-      <img id="myImg" class="grey-square" style="display: none;" src="">
-    </div>
+      <div id="quiz" style="display: none;">
+        <div id="loadingMessage" style="display: none;">Creating quiz...</div>
 
-    <div id="multipleChoicesContainer" style="display: none;">
-      <button id="choice1"></button>
-      <button id="choice2"></button>
-      <button id="choice3"></button>
-      <button id="choice4"></button>
-    </div>
+        <div id="questionHeader">
+          <div id="counter"></div>
+          <a id="homeLink" href="">Home</a>
+        </div>
 
-    <button id="showAnswerButton" style="display: none; background-color:grey">Show Answer</button>
+        <div id="multipleChoicesContainer" style="display: none;">
+          <button id="choice1"></button>
+          <button id="choice2"></button>
+          <button id="choice3"></button>
+          <button id="choice4"></button>
+        </div>
 
-    <div id="answer" style="display: none;">
-      <div id="scientific_name" style="font-style: italic;"></div>
-      <div id="common_name"></div>
-      <div id="placeGuess"></div>
-    </div>
+        <button id="showAnswerButton" style="display: none;">Skip this question</button>
 
-    <div>
-      <button id="nextButton" style="display: none;">Next</button>
-    </div>
-  </div>
+        <div id="answer" style="display: none;">
+          <div id="scientific_name"></div>
+          <div id="common_name"></div>
+          <div id="placeGuess"></div>
+        </div>
 
-  <div id="results" style="display: none;">
-  </div>
+        <button id="nextButton" style="display: none;">Next</button>
+      </div>
+
+      <div id="results" style="display: none;">
+      </div>
+    </aside>
+  </main>
 
   <script src="app.js"></script>
 </body>
